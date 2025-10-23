@@ -65,28 +65,12 @@ exports.logout = (req, res) => {
   res.json({ message: 'Logged out' });
 };
 
-// Middleware to get user from JWT
-exports.getUserFromToken = async (req, res, next) => {
-  try {
-    const token = req.cookies.token;
-    if (!token) return res.status(401).json({ message: 'Unauthorized' });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.id;
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Invalid token' });
-  }
-};
-
 // Update Profile
 exports.updateProfile = async (req, res) => {
   try {
     const { name, phone, address } = req.body;
-    const id = req.userId; // use ID from token
-
     const updatedUser = await User.findByIdAndUpdate(
-      id,
+      req.user._id,
       { name, phone, address },
       { new: true }
     );
@@ -109,10 +93,8 @@ exports.updateProfile = async (req, res) => {
 // Get Profile
 exports.getProfile = async (req, res) => {
   try {
-    const id = req.userId; // use ID from token
-    const user = await User.findById(id).select('-password');
+    const user = await User.findById(req.user._id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
-
     res.json({ user });
   } catch (err) {
     console.error(err);
